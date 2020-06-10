@@ -70,3 +70,30 @@ extension PhotosViewController: UICollectionViewDelegate {
         }
     }
 }
+
+
+extension PhotosViewController {
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        
+        guard let segueIdentifier = segue.identifier else {
+            preconditionFailure( "Missing segue identifier" )
+        }
+        
+        switch segueIdentifier {
+            
+        case "showPhoto":
+            if let selectedIndexPath = collectionView.indexPathsForSelectedItems?.first {
+                
+                let photo = photoDataSource.photos[ selectedIndexPath.row ]
+                
+                let destinationVC = segue.destination as! PhotoInfoViewController
+                destinationVC.photo = photo
+                destinationVC.store = store
+            }
+            
+        default:
+            preconditionFailure( "Unexpected segue identifier: \(segueIdentifier)" )
+        }
+    }
+}
