@@ -15,14 +15,41 @@ class PhotosViewController: UIViewController {
     var store: PhotoStore!
     var photoDataSource = PhotoDataSource()
     
+    // implement pull-to-refresh!
+    private let refreshControl: UIRefreshControl = {
+        let control = UIRefreshControl()
+        control.addTarget(self, action: #selector(refreshThumbnails(_:)), for: .valueChanged)
+        control.attributedTitle = NSAttributedString( string: "Retrieving photos..." )
+        return control
+    }()
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         collectionView.dataSource = photoDataSource
         collectionView.delegate = self
+        collectionView.refreshControl = refreshControl
+        
+        fetchThumnails()
+    }
+    
+    @objc func refreshThumbnails( _ sender: Any ) {
+        
+        fetchThumnails()
+    }
+}
+
+
+// MARK: - Fetch photo thumbnails
+
+extension PhotosViewController {
+    
+    func fetchThumnails() {
         
         store.fetchInterestingPhotos { (photosResult) in
+            
+            // the following is performed on the main thread after the fetch has completed
             
             switch photosResult {
                 
@@ -36,9 +63,16 @@ class PhotosViewController: UIViewController {
             }
             
             self.collectionView.reloadSections( IndexSet( integer: 0 ))
+            
+            if self.refreshControl.isRefreshing {
+                self.refreshControl.endRefreshing()
+            }
         }
     }
 }
+
+
+// MARK: - Implement collection view delegate method(s)
 
 extension PhotosViewController: UICollectionViewDelegate {
 
@@ -71,6 +105,8 @@ extension PhotosViewController: UICollectionViewDelegate {
     }
 }
 
+
+// MARK: - Handle segue to photo detail
 
 extension PhotosViewController {
     
