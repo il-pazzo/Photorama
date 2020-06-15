@@ -53,7 +53,16 @@ class PhotoStore {
                     "\n...headers = \(httpResponse.allHeaderFields)" )
             }
             
-            let result = self.processPhotosRequest(data: data, error: error )
+            var result = self.processPhotosRequest(data: data, error: error )
+            if case .success = result {
+                do {
+                    try self.persistentContainer.viewContext.save()
+                }
+                catch {
+                    result = .failure( error )
+                }
+            }
+            
             OperationQueue.main.addOperation {
                 completion( result )
             }
