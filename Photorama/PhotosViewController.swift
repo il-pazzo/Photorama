@@ -23,6 +23,7 @@ class PhotosViewController: UIViewController {
         return control
     }()
     
+    // MARK: - Code begins here
     
     override func viewDidLoad() {
         super.viewDidLoad()

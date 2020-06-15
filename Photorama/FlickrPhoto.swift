@@ -1,5 +1,5 @@
 //
-//  Photo.swift
+//  FlickrPhoto.swift
 //  Photorama
 //
 //  Created by Glenn Cole on 6/7/20.
@@ -8,7 +8,7 @@
 
 import Foundation
 
-class Photo: Codable {
+class FlickrPhoto: Codable {
     
     let title: String
     let remoteURL: URL?
@@ -23,9 +23,9 @@ class Photo: Codable {
     }
 }
 
-extension Photo: Equatable {
+extension FlickrPhoto: Equatable {
     
-    static func == ( lhs: Photo, rhs: Photo ) -> Bool {
+    static func == ( lhs: FlickrPhoto, rhs: FlickrPhoto ) -> Bool {
         
         // two photos are "equal" if they have the same photo id
         //
