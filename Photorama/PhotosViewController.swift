@@ -48,26 +48,35 @@ extension PhotosViewController {
     
     func fetchThumnails() {
         
+        // first show what Core Data has saved previously
+        self.updateDataSourceWithAllPhotos()
+        
         store.fetchInterestingPhotos { (photosResult) in
             
             // the following is performed on the main thread after the fetch has completed
             
-            switch photosResult {
-                
-            case let .success( photos ):
-                print( "Successfully found \(photos.count) photos" )
-                self.photoDataSource.photos = photos
-                
-            case let .failure( error ):
-                print( "Error fetching interesting photos: \(error)" )
-                self.photoDataSource.photos.removeAll()
-            }
-            
-            self.collectionView.reloadSections( IndexSet( integer: 0 ))
+            self.updateDataSourceWithAllPhotos()
             
             if self.refreshControl.isRefreshing {
                 self.refreshControl.endRefreshing()
             }
+        }
+    }
+    
+    func updateDataSourceWithAllPhotos() {
+        
+        store.fetchAllPhotos { (photosResult) in
+            
+            switch photosResult {
+                
+            case let .success( photos ):
+                self.photoDataSource.photos = photos
+                
+            case .failure:
+                self.photoDataSource.photos.removeAll()
+            }
+            
+            self.collectionView.reloadSections( IndexSet( integer: 0 ))
         }
     }
 }
