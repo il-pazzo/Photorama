@@ -38,7 +38,7 @@ class PhotoStore {
     }()
     
     
-    // MARK: - Code begins here
+    // MARK: - Photos
     
     func fetchAllPhotos( completion: @escaping (Result<[Photo], Error>) -> Void ) {
         
@@ -90,6 +90,52 @@ class PhotoStore {
         task.resume()
     }
     
+    private func processPhotosRequest( data: Data?,
+                                       error: Error? ) -> Result<[Photo], Error> {
+        
+        guard let jsonData = data else {
+            return .failure( error! )
+        }
+        
+        let context = persistentContainer.viewContext
+        
+        switch FlickrAPI.photos( fromJSON: jsonData ) {
+                
+        case let .failure( error ):
+            return .failure( error )
+
+        case let .success( flickrPhotos ):
+            let photos = flickrPhotos.map { flickrPhoto -> Photo in
+                
+                let fetchRequest: NSFetchRequest<Photo> = Photo.fetchRequest()
+                let predicate = NSPredicate( format: "\(#keyPath(Photo.photoID)) == \(flickrPhoto.photoID)" )
+                
+                fetchRequest.predicate = predicate
+                var fetchedPhotos: [Photo]?
+                context.performAndWait {
+                    fetchedPhotos = try? fetchRequest.execute()
+                }
+                if let existingPhoto = fetchedPhotos?.first {
+                    return existingPhoto
+                }
+                
+                var photo: Photo!
+                context.performAndWait {
+                    photo = Photo( context: context )
+                    photo.title = flickrPhoto.title
+                    photo.photoID = flickrPhoto.photoID
+                    photo.remoteURL = flickrPhoto.remoteURL
+                    photo.dateTaken = flickrPhoto.dateTaken
+                }
+                return photo
+            }
+            return .success( photos )
+        }
+    }
+    
+    
+    // MARK: - Images
+    
     func fetchImage( for photo: Photo,
                      completion: @escaping (Result<UIImage, Error>) -> Void ) {
         
@@ -126,50 +172,6 @@ class PhotoStore {
         task.resume()
     }
     
-    private func processPhotosRequest( data: Data?,
-                                       error: Error? ) -> Result<[Photo], Error> {
-        
-        guard let jsonData = data else {
-            return .failure( error! )
-        }
-        
-        let context = persistentContainer.viewContext
-        
-        switch FlickrAPI.photos( fromJSON: jsonData ) {
-            
-        case let .success( flickrPhotos ):
-            let photos = flickrPhotos.map { flickrPhoto -> Photo in
-                
-                let fetchRequest: NSFetchRequest<Photo> = Photo.fetchRequest()
-                let predicate = NSPredicate( format: "\(#keyPath(Photo.photoID)) == \(flickrPhoto.photoID)" )
-                
-                fetchRequest.predicate = predicate
-                var fetchedPhotos: [Photo]?
-                context.performAndWait {
-                    fetchedPhotos = try? fetchRequest.execute()
-                }
-                if let existingPhoto = fetchedPhotos?.first {
-                    return existingPhoto
-                }
-                
-                var photo: Photo!
-                context.performAndWait {
-                    photo = Photo( context: context )
-                    photo.title = flickrPhoto.title
-                    photo.photoID = flickrPhoto.photoID
-                    photo.remoteURL = flickrPhoto.remoteURL
-                    photo.dateTaken = flickrPhoto.dateTaken
-                }
-                return photo
-            }
-            return .success( photos )
-            
-        case let .failure( error ):
-            return .failure( error )
-        }
-        
-    }
-    
     private func processImageRequest( data: Data?,
                                       error: Error? ) -> Result<UIImage, Error> {
         
@@ -181,5 +183,27 @@ class PhotoStore {
         }
         
         return .success( image )
+    }
+    
+    
+    // MARK: - Tags
+    
+    func fetchAllTags( completion: @escaping (Result<[Tag], Error>) -> Void ) {
+        
+        let fetchRequest: NSFetchRequest<Tag> = Tag.fetchRequest()
+        let sortByName = NSSortDescriptor( key: #keyPath(Tag.name), ascending: true )
+        fetchRequest.sortDescriptors = [sortByName]
+        
+        let viewContext = persistentContainer.viewContext
+        viewContext.perform {
+            
+            do {
+                let allTags = try fetchRequest.execute()
+                completion( .success( allTags ))
+            }
+            catch {
+                completion( .failure( error ))
+            }
+        }
     }
 }
