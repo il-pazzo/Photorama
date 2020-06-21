@@ -14,6 +14,39 @@ class PhotoCollectionViewCell: UICollectionViewCell {
     @IBOutlet var spinner: UIActivityIndicatorView!
     
     
+    // MARK: - Accessibility vars
+    
+    var photoDescription: String?
+    
+    override var isAccessibilityElement: Bool {
+        get {
+            return true
+        }
+        set {
+            // ignored
+        }
+    }
+    
+    override var accessibilityLabel: String? {
+        get {
+            return photoDescription
+        }
+        set {
+            // ignored
+        }
+    }
+    
+    override var accessibilityTraits: UIAccessibilityTraits {
+        get {
+            return super.accessibilityTraits.union([ .image, .button ])
+        }
+        set {
+            // ignore
+        }
+    }
+    
+    // MARK: - Code begins here
+    
     func update( displaying image: UIImage? ) {
         
         if let imageToDisplay = image {
