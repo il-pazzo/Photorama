@@ -42,9 +42,12 @@ class TagsViewController: UITableViewController {
         present( alertController, animated: true )
     }
     
-    private func updateTags() {
+    private func updateTags( selecting newTag: Tag? = nil ) {
         
         store.fetchAllTags() { (tagsResult) in
+            
+            // we'll need to reload the selectedIndexPaths array, so erase what's there now
+            self.selectedIndexPaths.removeAll( keepingCapacity: true )
             
             switch tagsResult {
                     
@@ -57,12 +60,21 @@ class TagsViewController: UITableViewController {
                 guard let photoTags = self.photo.tags as? Set<Tag> else {
                     return
                 }
-                
+
+                // update the index paths for existing tags
                 for tag in photoTags {
                     if let index = self.tagDataSource.tags.firstIndex( of: tag ) {
                         let indexPath = IndexPath( row: index, section: 0 )
                         self.selectedIndexPaths.append( indexPath )
                     }
+                }
+
+                // if a new tag was added just now, ASSUME IT APPLIES HERE and update accordingly
+                if let newTag = newTag,
+                    let newIndex = self.tagDataSource.tags.firstIndex( of: newTag) {
+                    
+                    let indexPath = IndexPath( row: newIndex, section: 0 )
+                    self.updateLinkagesFor( tag: newTag, at: indexPath )
                 }
             }
             
@@ -102,7 +114,7 @@ extension TagsViewController {
                     print( "Core Data save failed: \(error)." )
                 }
                 
-                self.updateTags()
+                self.updateTags( selecting: newTag )
             }
         }
         alertController.addAction( okAction )
@@ -125,6 +137,13 @@ extension TagsViewController {
                              didSelectRowAt indexPath: IndexPath ) {
         
         let tag = tagDataSource.tags[ indexPath.row ]
+    
+        updateLinkagesFor( tag: tag, at: indexPath )
+        
+        tableView.reloadRows( at: [indexPath], with: .automatic )
+    }
+    
+    private func updateLinkagesFor( tag: Tag, at indexPath: IndexPath ) {
         
         if let index = selectedIndexPaths.firstIndex( of: indexPath ) {
             selectedIndexPaths.remove( at: index )
@@ -141,8 +160,6 @@ extension TagsViewController {
         catch {
             print( "Core Data save failed: \(error)." )
         }
-        
-        tableView.reloadRows( at: [indexPath], with: .automatic )
     }
     
     override func tableView( _ tableView: UITableView,
